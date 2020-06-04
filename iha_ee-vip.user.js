@@ -3,10 +3,8 @@
 // @version      0.1
 // @description  iha.ee eemalda gif (tasuta vip)
 // @author       Nigol
-// @run-at       document-end
 // @match        https://iha.ee/*
 // @include      https://*.iha.ee/*
-// @require http://code.jquery.com/jquery-3.4.1.min.js
 // @grant        none
 // ==/UserScript==
 
