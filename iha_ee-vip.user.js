@@ -3,16 +3,18 @@
 // @version      1.0
 // @description  IHA.EE GIF'I EEMALDAJA (TASUTA VIP)
 // @author       Nigol
-// @run-at       document-end
+// @run-at       document-idle
 // @match        https://iha.ee/*
+// @include      https://*.iha.ee/*
 // @include      https://*.iha.ee/*
 // @require http://code.jquery.com/jquery-3.4.1.min.js
 // @grant        none
 // @namespace https://greasyfork.org/users/578974
 // ==/UserScript==
+window.addEventListener("load", function(event) {
 
-(function() {
-    window.onload = function(){
+    // The script
+    $(document).ready(function() {
         // Get the page title and change it
         var page_title = document.title;
 
@@ -54,8 +56,6 @@
         var iha_ee_preview_gif = $("img[src$='https://www.iha.ee/images/edf83us7fkslaowie0937s.gif']");
         $(iha_ee_preview_gif).fadeTo("fast", 0);
 
-
-
         // Find the iha.ee logo and replace it with my own logo, iha.ee tasuta vip
         var iha_logo = $("img[src$='https://www.iha.ee/images/www_iha_1.gif?170120']");
         $(iha_logo).fadeOut("slow", function() {
@@ -77,11 +77,13 @@
             $(top_ad_href).attr("href", "https://github.com/raitnigol");
         });
 
+        // Remove the bottom ad
         var bottom_ad = $("img[src$='https://www.iha.ee/stats/stats/202b127105.png']");
         $(bottom_ad).fadeOut("fast", 0);
 
+        // Remove the bottom ad if source is .gif
         var second_bottom_ad = $("img[src$='https://www.iha.ee/stats/stats/200b915890.gif']");
-        $(bottom_ad).fadeOut("fast", 0);
+        $(second_bottom_ad).fadeOut("fast", 0);
 
         // Get all table elements that contain images
         var images_gif = $('table').find('img.Top_pic[src$=".gif"]');
@@ -138,5 +140,8 @@
             }
         }
         set_image_resolution();
-    }
-})();
+
+        // If not logged in, remove the "add comment" section
+        $(".AddCommentForm:contains('Lisa kommentaar')").remove();
+    });
+}, false);
