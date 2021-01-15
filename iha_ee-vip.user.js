@@ -8,6 +8,7 @@
 // @include      https://*.iha.ee/*
 // @include      https://*.iha.ee/*
 // @require http://code.jquery.com/jquery-3.4.1.min.js
+// @require https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js
 // @grant        none
 // @namespace https://greasyfork.org/users/578974
 // ==/UserScript==
@@ -15,6 +16,47 @@ window.addEventListener("load", function(event) {
 
     // The script
     $(document).ready(function() {
+        // Read data from the cookie to get the persons localization settings (language)
+        var user_language;
+        // Use a switch to identify the language. Cookies.get() returns a string, so we must change it to integer.
+        switch(+(Cookies.get('Lang'))) {
+            case 1:
+                user_language = "estonian";
+                break;
+            case 2:
+                user_language = "english";
+                break;
+            case 3:
+                user_language = "latvian";
+                break;
+            case 4:
+                user_language = "finnish";
+                break;
+            case 5:
+                user_language = "russian";
+        }
+        console.log("Current language: ", user_language)
+
+        // Change the ugly font on the site
+        var s = document.createElement("style");
+        s.type = "text/css";
+        s.textContent = "* { font-family: 'Trebuchet MS', sans-serif !important; }";
+
+        $('td.gray1_bg').each(function() {
+            $(this).css({
+                'vertical-align': 'middle',
+                'text-align': 'center'
+            })
+        });
+
+        document.head.appendChild(s);
+        // Config - does the user want certain part of the page visible or hidden?
+        // Edit here. Boolean - false to hide, true to show the content.
+        const show_news = false; // -- default is false. Do you want to see the news feed on the page?
+        const show_last_top_10 = false; // -- default is false. Do you want to see the last top users that recieved a score of 10 on their images?
+        const show_users_birthday = false; // -- default is false. Do you want to see the users with birthday today?
+        const show_online_users = false; // -- default is true. Show the users currently online
+
         // Get the page title and change it
         var page_title = document.title;
 
@@ -42,6 +84,26 @@ window.addEventListener("load", function(event) {
         // This is needed because some elements are found by text, like the text that says you have to log in to see the content
         // and it changes depending on the language selected
 
+        // Check the config of the file and delete content based on it
+        function remove_config_content() {
+            if (show_news == false) {
+                if(show_last_top_10 == false) {
+                    // Remove the content
+                    $("td.bubble_top:contains('Uudised')").parents('tbody').eq(1).remove();
+                }
+
+            }
+
+            if (show_users_birthday == false) {
+                if (show_online_users == false) {
+                    $("td.bubble_top:contains('Tänased sünnipäevalapsed')").remove();
+                    $("td.bubble_top:contains('Hetkel Online')").remove();
+                    $('table.FourBorder_b').remove();
+                }
+            }
+
+        };
+        remove_config_content();
 
         // We can remove the iha.ee gif sitewide because it is a single gif. The reason I am not only removing the gif with one line of code is because
         // when the gif URL gets changed (current: https://www.iha.ee/images/edf83jd7s6djfkgie843u4.gif), I would manually have to edit the code to remove the new gif.
@@ -50,6 +112,10 @@ window.addEventListener("load", function(event) {
         // Remove the iha.ee gif sitewide
         var iha_ee_gif = $("img[src$='https://www.iha.ee/images/edf83jd7s6djfkgie843u4.gif']");
         $(iha_ee_gif).fadeTo("fast", 0);
+
+        // Remove the white banner thingy
+        var iha_ee_ad_banner = $('#TICKER');
+        $(iha_ee_ad_banner).remove();
 
         // Later implement a automatic solution that does not take gif source into input
         // Remove the small preview gifs when looking at photos
@@ -76,6 +142,11 @@ window.addEventListener("load", function(event) {
             var top_ad_href = top_ad.parent()
             $(top_ad_href).attr("href", "https://github.com/raitnigol");
         });
+
+        // Remove the text "Sisuturundus"
+        // Find the closest table to the top ad, find the td that contains the text and change the text to empty
+        var top_ad_text = $(top_ad).closest('table').find('tr').find('td').parent()[0];
+        $(top_ad_text).remove();
 
         // Remove the bottom ad
         var bottom_ad = $("img[src$='https://www.iha.ee/stats/stats/202b127105.png']");
