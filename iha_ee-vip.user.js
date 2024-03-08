@@ -13,6 +13,60 @@
 
 (function() {
     'use strict';
+    // Get the language for the user
+    function getUserLanguage() {
+        var langCode = +Cookies.get('Lang'); // Convert to number with unary plus
+        switch(langCode) {
+            case 1:
+            default:
+                return "estonian";
+            case 2: return "english";
+            case 3: return "latvian";
+            case 4: return "finnish";
+            case 5: return "russian";
+        }
+    }
+    console.log("Current language:", getUserLanguage());
+
+    // Based on language, remove content from the website
+    function deleteDivByLanguageText() {
+        const language = getUserLanguage();
+        let regexPatterns;
+
+        // Adjust the switch statement to default to Estonian regex patterns
+        switch (language) {
+            case "english":
+                regexPatterns = [/Today's birthdays\s+\(\d+ people\)/, /Currently online \(\d+ people\)/];
+                break;
+            case "latvian":
+                regexPatterns = [/Šodienas dzimšanas dienas\s+\(\d+ personas\)/, /Pašlaik tiešsaitē atrodas \(\d+ personas\)/];
+                break;
+            case "finnish":
+                regexPatterns = [/Tämän  päivän syntymäpäiväsankarit\s+\(\d+ henkilöä\)/, /Nykyhetkellä online-käyttäjiä\s+\(\d+ henkilöä\)/];
+                break;
+            case "russian":
+                regexPatterns = [/* Russian regex patterns here */];
+                // Note - sorry, but learn estonian or english, cause I will not modify this code for you. For certain reasons :)
+                break;
+            case "estonian":
+            default: // Defaulting to Estonian
+                regexPatterns = [/Tänased sünnipäevalapsed \(\d+ inimest\)/, /Hetkel Online kasutajad \(\d+ inimest\)/];
+        }
+
+        // Find and delete the divs that match the regex patterns
+        const divs = document.querySelectorAll('.bubble_top');
+        divs.forEach(div => {
+            const textContent = div.textContent.trim();
+            regexPatterns.forEach(pattern => {
+                if (pattern.test(textContent)) {
+                    div.parentNode.removeChild(div);
+                }
+            });
+        });
+    };
+
+    // Example usage
+    deleteDivByLanguageText();
 
     // Change the font of the page to League Spartan
     function changeFont() {
@@ -57,8 +111,9 @@
             logo.src = 'https://i.ibb.co/zmv72z3/iha-tasuta-vip-logo.png';
         }
 
-        // Find and replace the slogan
-        const slogan = document.querySelector("img[src*='www_iha_slog_1.gif']");
+        // Find and replace the slogan for any language
+        // Select the first img inside a div with the class "slogan"
+        const slogan = document.querySelector("div.slogan img");
         if (slogan) {
             slogan.src = 'https://i.ibb.co/J7GbvMJ/iha-slogan.png';
         }
@@ -77,34 +132,99 @@
         // Config - does the user want certain part of the page visible or hidden?
         // Edit here. Boolean - false to hide, true to show the content.
         const show_news = false; // -- default is false. Do you want to see the news feed on the page?
-        const show_last_top_10 = false; // -- default is false. Do you want to see the last top users that recieved a score of 10 on their images?
+        const show_last_top_ten = false; // -- default is false. Do you want to see the last top users that recieved a score of 10 on their images?
         const show_users_birthdays = false; // -- default is false. Do you want to see the users with birthday today?
         const show_online_users = false; // -- default is false. Show the users currently online
         const show_right_side_statistics = false; // default is false. Show the statistics on the right of the page.
         const header_stick_to_top = false; // default is false. Makes the header stick to the top.
         const right_panel_color = "black"; // default is black. change at your own risk, should work with basic colors.
         const header_background_color = "black"; // default is black. change at your own risk, should work with basic colors.
+        const center_panel_color = "black"; // default is black. change at your own risk, should work with basic colors.
+        const change_page_text_color = true; // default is true. sets all text to white because the background is black.
+
         // Check if the user is logged in or not
         function isUserLoggedIn() {
             const logoutLink = document.querySelector('a[href$="/logout"]');
             return Boolean(logoutLink);
         }
 
+        if (change_page_text_color) {
+            // Select all <b> elements and set their text color to white
+            var bElements = document.querySelectorAll('b');
+            for (var belement = 0; belement < bElements.length; belement++) {
+                bElements[belement].style.color = "white";
+            };
+
+            // Select all <a> elements and set their text color to white
+            var aElements = document.querySelectorAll('a');
+            for (var aelement = 0; aelement < aElements.length; aelement++) {
+                aElements[aelement].style.color = "white";
+            };
+
+            var divElements = document.querySelectorAll('div');
+            for (var divelement = 0; divelement < divElements.length; divelement++) {
+                divElements[divelement].style.color = "white";
+            };
+        };
         // Remove left menu links that can not be accessed when not logged
         function removeMenuItemsIfNotLoggedIn() {
             if (!isUserLoggedIn()) {
-                const itemsToRemove = [
-                    "VIP konto",
-                    "Postkast",
-                    "Minu pildid",
-                    "Minu videod",
-                    "Minu kontaktid",
-                    "Minu ankeet",
-                    "Konto seaded",
-                    "Vaadatud/hinnatud",
-                    "Seksikad jutud"
-                ];
+                // Define menu items for each language
+                const menuItemsByLanguage = {
+                    english: [
+                        "VIP account", // Assumed English translation
+                        "Mailbox", // Assumed English translation
+                        "My pictures",
+                        "My videos",
+                        "My contacts",
+                        "My profile",
+                        "Account settings",
+                        "Viewed/rated", // Assumed English translation
+                        "Sexy stories" // Assumed English translation
+                    ],
+                    estonian: [
+                        "VIP konto",
+                        "Postkast",
+                        "Minu pildid",
+                        "Minu videod",
+                        "Minu kontaktid",
+                        "Minu ankeet",
+                        "Konto seaded",
+                        "Vaadatud/hinnatud",
+                        "Seksikad jutud"
+                    ],
+                    latvian: [
+                        "VIP konts",
+                        "Pastkaste",
+                        "Mani attēli",
+                        "Manas videofilmas",
+                        "Mani kontakti",
+                        "Mans profils",
+                        "Konta iestatījumi",
+                        "Skatīti/vērtēti",
+                        "Seksīgi stāsti"
+                    ],
+                    finnish: [
+                        "VIP-tili",
+                        "Postilaatikko",
+                        "Minun kuvat",
+                        "Minun videot",
+                        "Minun yhteystiedot",
+                        "Profiilini",
+                        "Tilin asetukset",
+                        "Katsottu/arvioitu",
+                        "Seksikkäät tarinat"
+                    ]
+                };
 
+                // Use the getUserLanguage function to determine the current language
+                const currentLanguage = getUserLanguage(); // Assume this function is defined elsewhere
+
+                // Select the appropriate list of items to remove based on the current language
+                // Default to English if the current language's items aren't defined
+                const itemsToRemove = menuItemsByLanguage[currentLanguage] || menuItemsByLanguage.english;
+
+                // Proceed with the removal process
                 itemsToRemove.forEach(item => {
                     // Find the menu item by its text content and remove it
                     const menuItem = Array.from(document.querySelectorAll('#leftMenu a')).find(a => a.textContent.trim() === item);
@@ -113,12 +233,12 @@
                         const previousSibling = menuItem.previousElementSibling;
                         if (previousSibling && previousSibling.classList.contains('left_menu_item_separator')) {
                             previousSibling.remove();
-                        }
+                        };
                         menuItem.remove();
-                    }
+                    };
                 });
-            }
-        }
+            };
+        };
 
     removeMenuItemsIfNotLoggedIn();
 
@@ -175,6 +295,7 @@
         };
 
         replaceIconsWithSVG();
+
             // Make the header stick to the top
         if (!header_stick_to_top) {
             var header = document.getElementById('header');
@@ -211,6 +332,10 @@
             if (birthday_list) {
                 birthday_list.remove();
             };
+            var birthday_list_more = document.querySelector('.birthday_list_more');
+            if (birthday_list_more) {
+                birthday_list_more.remove();
+            };
         };
 
         // Remove the online users div. Bullshit once again. Set to 'true' if you want to see it.
@@ -218,6 +343,18 @@
             var online_list = document.querySelector('.online_list');
             if (online_list) {
                 online_list.remove();
+            };
+            var online_list_more = document.querySelector('.online_list_more');
+            if (online_list_more) {
+                online_list_more.remove();
+            };
+        };
+
+        // Remove the view where it shows you the last people who got the rating 10. Set to 'true' if you want to see it.
+        if (!show_last_top_ten) {
+            var last_top_ten = document.querySelector('.news_ten_wrapper')
+            if (last_top_ten) {
+                last_top_ten.remove();
             };
         };
         // Get the page title and change it
@@ -239,6 +376,12 @@
         var footer_banner = document.querySelector('.footer_banner');
         if (footer_banner) {
             footer_banner.remove();
+        };
+
+        // Remove the bottom footer wrapper.
+        var footer_wrapper = document.querySelector('.footer_wrapper');
+        if (footer_wrapper) {
+            footer_wrapper.remove();
         };
 
         // Remove the ticker bullshit (banner that shows info about how to advertise yourself)
@@ -272,6 +415,11 @@
         if (rightPanel) {
             rightPanel.style.backgroundColor = right_panel_color;
         }
+        // Change the center panel background color to the color specified in the configuration
+        var centerPanel = document.querySelector('.centerpanel');
+        if (centerPanel) {
+            centerPanel.style.backgroundColor = center_panel_color;
+        };
         // New functionalities
         changeFont();
         changeWallpaper();
