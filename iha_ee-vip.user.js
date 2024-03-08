@@ -1,70 +1,225 @@
 // ==UserScript==
 // @name         IHA.EE GIF'I EEMALDAJA (TASUTA VIP)
-// @version      1.0
+// @version      2.0
 // @description  IHA.EE GIF'I EEMALDAJA (TASUTA VIP)
 // @author       Nigol
 // @run-at       document-idle
-// @match        https://iha.ee/*
-// @include      https://*.iha.ee/*
-// @include      https://*.iha.ee/*
-// @include      https://www.iha.ee/index.php?mode=main
+// @match        https://www.iha.ee/*
+// @require      https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js
 
-// @require http://code.jquery.com/jquery-3.4.1.min.js
-// @require https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js
 // @grant        none
-// @namespace https://greasyfork.org/users/578974
+// @namespace    https://greasyfork.org/users/578974
 // ==/UserScript==
 
-window.addEventListener("load", function(event) {
+(function() {
+    'use strict';
 
+    // Change the font of the page to League Spartan
+    function changeFont() {
+        // Importing League Spartan font from Google Fonts
+        var link = document.createElement("link");
+        link.href = "https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;700&display=swap";
+        link.rel = "stylesheet";
+        document.head.appendChild(link);
 
-    // The script
-    $(document).ready(function() {
-        // Read data from the cookie to get the persons localization settings (language)
-        var user_language;
+        // Creating a <style> element to set the font-family
+        var style = document.createElement("style");
+        style.type = "text/css";
+        style.textContent = "* { font-family: 'League Spartan', sans-serif !important; }";
+        document.head.appendChild(style);
 
-        // Use a switch to identify the language. Cookies.get() returns a string, so we must change it to integer.
-        switch(+(Cookies.get('Lang'))) {
-            case 1:
-                user_language = "estonian";
-                break;
-            case 2:
-                user_language = "english";
-                break;
-            case 3:
-                user_language = "latvian";
-                break;
-            case 4:
-                user_language = "finnish";
-                break;
-            case 5:
-                user_language = "russian";
-        }
-        console.log("Current language: ", user_language)
-
-
-        // Change the ugly font on the site
-        var s = document.createElement("style");
-        s.type = "text/css";
-        s.textContent = "* { font-family: 'Trebuchet MS', sans-serif !important; }";
-
-        $('td.gray1_bg').each(function() {
-            $(this).css({
-                'vertical-align': 'middle',
-                'text-align': 'center'
-            })
+        // Adjusting vertical-align and text-align for .gray1_bg elements
+        document.querySelectorAll('td.gray1_bg').forEach(function(td) {
+            td.style.verticalAlign = 'middle';
+            td.style.textAlign = 'center';
         });
-        document.head.appendChild(s);
+    };
 
+    // Function for resizing text for various elements
+    function resizeText(selector, newSize) {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+            element.style.fontSize = newSize;
+        });
+    };
+    resizeText('a', '18px');
+    // Change the wallpaper of the site
+    function changeWallpaper() {
+        document.body.style.backgroundImage = 'url(https://i.ibb.co/hR726CC/iha-background.jpg)';
+        document.body.style.backgroundSize = 'cover';
+    }
 
+    // Replace the iha.ee logo and slogan
+    function replaceLogoAndSlogan() {
+        // Find and replace the logo
+        const logo = document.querySelector("img[src*='https://www.iha.ee/images/resp_www_iha_ss_1.gif?170120']");
+        if (logo) {
+            logo.src = 'https://i.ibb.co/zmv72z3/iha-tasuta-vip-logo.png';
+        }
+
+        // Find and replace the slogan
+        const slogan = document.querySelector("img[src*='www_iha_slog_1.gif']");
+        if (slogan) {
+            slogan.src = 'https://i.ibb.co/J7GbvMJ/iha-slogan.png';
+        }
+    }
+
+    // Remove the "Add Comment" section
+    function removeComments() {
+        const comments = document.querySelectorAll(".AddCommentForm");
+        comments.forEach(comment => {
+            comment.style.display = 'none';
+        });
+    }
+
+    // Main function to adjust content and apply styles
+    function adjustContent() {
         // Config - does the user want certain part of the page visible or hidden?
         // Edit here. Boolean - false to hide, true to show the content.
         const show_news = false; // -- default is false. Do you want to see the news feed on the page?
         const show_last_top_10 = false; // -- default is false. Do you want to see the last top users that recieved a score of 10 on their images?
-        const show_users_birthday = false; // -- default is false. Do you want to see the users with birthday today?
-        const show_online_users = false; // -- default is true. Show the users currently online
+        const show_users_birthdays = false; // -- default is false. Do you want to see the users with birthday today?
+        const show_online_users = false; // -- default is false. Show the users currently online
+        const show_right_side_statistics = false; // default is false. Show the statistics on the right of the page.
+        const header_stick_to_top = false; // default is false. Makes the header stick to the top.
+        const right_panel_color = "black"; // default is black. change at your own risk, should work with basic colors.
+        const header_background_color = "black"; // default is black. change at your own risk, should work with basic colors.
+        // Check if the user is logged in or not
+        function isUserLoggedIn() {
+            const logoutLink = document.querySelector('a[href$="/logout"]');
+            return Boolean(logoutLink);
+        }
 
+        // Remove left menu links that can not be accessed when not logged
+        function removeMenuItemsIfNotLoggedIn() {
+            if (!isUserLoggedIn()) {
+                const itemsToRemove = [
+                    "VIP konto",
+                    "Postkast",
+                    "Minu pildid",
+                    "Minu videod",
+                    "Minu kontaktid",
+                    "Minu ankeet",
+                    "Konto seaded",
+                    "Vaadatud/hinnatud",
+                    "Seksikad jutud"
+                ];
 
+                itemsToRemove.forEach(item => {
+                    // Find the menu item by its text content and remove it
+                    const menuItem = Array.from(document.querySelectorAll('#leftMenu a')).find(a => a.textContent.trim() === item);
+                    if (menuItem) {
+                        // If a separator is directly before the item, consider removing it as well
+                        const previousSibling = menuItem.previousElementSibling;
+                        if (previousSibling && previousSibling.classList.contains('left_menu_item_separator')) {
+                            previousSibling.remove();
+                        }
+                        menuItem.remove();
+                    }
+                });
+            }
+        }
+
+    removeMenuItemsIfNotLoggedIn();
+
+        // Change the header icons
+        function replaceIconsWithSVG() {
+            const messageSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path fill="#feffff" d="M160 368c26.5 0 48 21.5 48 48v16l72.5-54.4c8.3-6.2 18.4-9.6 28.8-9.6H448c8.8 0 16-7.2 16-16V64c0-8.8-7.2-16-16-16H64c-8.8 0-16 7.2-16 16V352c0 8.8 7.2 16 16 16h96zm48 124l-.2 .2-5.1 3.8-17.1 12.8c-4.8 3.6-11.3 4.2-16.8 1.5s-8.8-8.2-8.8-14.3V474.7v-6.4V468v-4V416H112 64c-35.3 0-64-28.7-64-64V64C0 28.7 28.7 0 64 0H448c35.3 0 64 28.7 64 64V352c0 35.3-28.7 64-64 64H309.3L208 492z"/></svg>`;
+            const searchSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path fill="#feffff" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/></svg>`
+            const loginSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path fill="#feffff" d="M217.9 105.9L340.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L217.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1L32 320c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM352 416l64 0c17.7 0 32-14.3 32-32l0-256c0-17.7-14.3-32-32-32l-64 0c-17.7 0-32-14.3-32-32s14.3-32 32-32l64 0c53 0 96 43 96 96l0 256c0 53-43 96-96 96l-64 0c-17.7 0-32-14.3-32-32s14.3-32 32-32z"/></svg>`
+
+            // Select the envelope icon's image element
+            const envelopeIconImg = document.querySelector('.envelopeicon img');
+            const searchIconImg = document.querySelector('.searchicon img');
+            const loginIconImg = document.querySelector('.loginicon img');
+
+            // Check if the envelope icon exists
+            if (envelopeIconImg) {
+                // Create a div to wrap the SVG, this ensures the notification div remains positioned correctly
+                const svgWrapper = document.createElement('div');
+                svgWrapper.innerHTML = messageSVG;
+                svgWrapper.style.width = '32px'; // Set the SVG width
+                svgWrapper.style.height = '32px'; // Set the SVG height
+                svgWrapper.style.position = 'relative'; // Needed to keep the notification positioned correctly
+
+                // Replace the <img> tag with the new SVG wrapper
+                envelopeIconImg.parentNode.insertBefore(svgWrapper, envelopeIconImg);
+                envelopeIconImg.remove(); // Remove the original <img> tag
+            };
+            // Check if the search icon exists
+            if (searchIconImg) {
+                const svgWrapper = document.createElement('div');
+                svgWrapper.innerHTML = searchSVG;
+                svgWrapper.style.width = '32px'; // Set the SVG width
+                svgWrapper.style.height = '32px'; // Set the SVG height
+                svgWrapper.style.position = 'relative'; // Needed to keep the notification positioned correctly
+
+                // Replace the <img> tag with the new SVG wrapper
+                searchIconImg.parentNode.insertBefore(svgWrapper, searchIconImg);
+                searchIconImg.remove(); // Remove the original <img> tag
+            };
+
+            // Check if the envelope icon exists
+            if (loginIconImg) {
+                // Create a div to wrap the SVG, this ensures the notification div remains positioned correctly
+                const svgWrapper = document.createElement('div');
+                svgWrapper.innerHTML = loginSVG;
+                svgWrapper.style.width = '32px'; // Set the SVG width
+                svgWrapper.style.height = '32px'; // Set the SVG height
+                svgWrapper.style.position = 'relative'; // Needed to keep the notification positioned correctly
+
+                // Replace the <img> tag with the new SVG wrapper
+                loginIconImg.parentNode.insertBefore(svgWrapper, loginIconImg);
+                loginIconImg.remove(); // Remove the original <img> tag
+            };
+        };
+
+        replaceIconsWithSVG();
+            // Make the header stick to the top
+        if (!header_stick_to_top) {
+            var header = document.getElementById('header');
+            if (header) {
+                // Remove the 'position: fixed;' style to make it stay at the top without moving on scroll
+                header.style.position = 'static'; // Or 'relative' depending on how you want it to behave in the flow
+                // Change header background color to black
+                header.style.backgroundColor = header_background_color;
+            };
+            var toppadding = document.querySelector('.toppadding');
+            if (toppadding) {
+                toppadding.remove();
+            };
+        };
+
+        // Remove the right side statistics.
+        if (!show_right_side_statistics) {
+        var right_side_statistics = document.querySelector('#rightstatistics');
+            if (right_side_statistics) {
+                right_side_statistics.remove();
+            };
+        };
+        // Remove the news selection, because honestly - who the fuck cares? Set this to 'true' to still see the news.
+        if (!show_news) {
+            var main_news_div = document.querySelector('.main_news_div');
+            if (main_news_div) {
+                main_news_div.remove();
+            };
+        };
+
+        // Remove the birthdays shit, because once again, no one gives a flying fuck. Set to 'true' if you want to see this shit.
+        if (!show_users_birthdays) {
+            var birthday_list = document.querySelector('.birthday_list');
+            if (birthday_list) {
+                birthday_list.remove();
+            };
+        };
+
+        // Remove the online users div. Bullshit once again. Set to 'true' if you want to see it.
+        if (!show_online_users) {
+            var online_list = document.querySelector('.online_list');
+            if (online_list) {
+                online_list.remove();
+            };
+        };
         // Get the page title and change it
         var page_title = document.title;
 
@@ -75,199 +230,67 @@ window.addEventListener("load", function(event) {
         page_title = `${page_current_location} | Iha.ee - Tasuta VIP`
         document.title = page_title;
 
-
-        // Change the wallpaper of the site
-        $('body').css('background-image', 'url(https://i.ibb.co/hR726CC/iha-background.jpg)');
-        $('body').css('background-size', 'cover');
-
-        //document.body.style.backgroundImage = ('url(https://i.ibb.co/hR726CC/iha-background.jpg)'); - vanilla JS method for the same thing
-
-
-        // First of all, check in which section of the page the current user is
-        var user_absolute_path = window.location.href;
-        // Split the string and get the first element of the array, which is the path of the website
-        var user_current_path = user_absolute_path.split('?')[0];
-        // Split the string and get the second element of the array, which is the current mode (section) of the webpage
-        // Also remove all unwanted parts of the string (php variables (& and anything after that)
-        var user_current_mode = user_absolute_path.split('?')[1].replace(/\&.*/,'');
-        console.log("Current user mode:", user_current_mode);
-
-        // Check the current language of the user to make it work in all languages, not only in Estonia
-        // This is needed because some elements are found by text, like the text that says you have to log in to see the content
-        // and it changes depending on the language selected
-        // TODO: ADD CODE HERE THAT WORKS ON DIFFERENT LANGUAGES
-
-
-        // Check the config of the file and delete content based on it
-        function remove_config_content() {
-            if (show_news == false) {
-                if(show_last_top_10 == false) {
-                    // Remove the content
-                    $("td.bubble_top:contains('Uudised')").parents('tbody').eq(1).remove();
-                }
-
-            }
-
-            if (show_users_birthday == false) {
-                if (show_online_users == false) {
-                    $("td.bubble_top:contains('Tänased sünnipäevalapsed')").remove();
-                    $("td.bubble_top:contains('Hetkel Online')").remove();
-                    $('table.FourBorder_b').remove();
-                }
-            }
-
+        // Remove the top advertisement
+        var headbanner = document.querySelector('.headbanner');
+        if (headbanner) {
+            headbanner.remove();
         };
-        remove_config_content();
-
-
-
-        // I do not like to use selectors to remove something, but this is the way I have to do it right now. Maybe implement a better solution later?
-        // It can also fuck up things bad if the selectors change in position, but fuck it.
-        // Remove the random pink shit at the end of the page
-        $("body > div:nth-child(7) > table > tbody > tr:nth-child(2) > td > table:nth-child(2) > tbody > tr:nth-child(2)").remove();
-
-        // Remove the right side of the page showing VIP of today and statistics, because no one gives a fuck.
-        $("body > div:nth-child(7) > table > tbody > tr:nth-child(2) > td > table:nth-child(2) > tbody > tr > td.right_side").remove();
-
-        // Remove the voting thing from top of images
-        $("body > div:nth-child(8) > table > tbody > tr:nth-child(2) > td > table:nth-child(2) > tbody > tr:nth-child(1) > td.center_td > table:nth-child(3) > tbody > tr:nth-child(2) > td > table:nth-child(1)").remove();
-        // We can remove the iha.ee gif sitewide because it is a single gif. The reason I am not only removing the gif with one line of code is because
-        // when the gif URL gets changed (current: https://www.iha.ee/images/edf83jd7s6djfkgie843u4.gif), I would manually have to edit the code to remove the new gif.
-        // So I think this approach is the best.
-
-        // Remove the iha.ee gif sitewide
-        var iha_ee_gif = $("img[src$='https://www.iha.ee/images/edf83jd7s6djfkgie843u4.gif']");
-        $(iha_ee_gif).fadeTo("fast", 0);
-
-
-        // Remove the white banner thingy
-        var iha_ee_ad_banner = $('#TICKER');
-        $(iha_ee_ad_banner).remove();
-
-
-        // Later implement a automatic solution that does not take gif source into input
-        // Remove the small preview gifs when looking at photos
-        var iha_ee_preview_gif = $("img[src$='https://www.iha.ee/images/edf83us7fkslaowie0937s.gif']");
-        $(iha_ee_preview_gif).fadeTo("fast", 0);
-
-
-        // Find the iha.ee logo and replace it with my own logo, iha.ee tasuta vip
-        var iha_logo = $("img[src$='https://www.iha.ee/images/www_iha_1.gif?170120']");
-        $(iha_logo).fadeOut("slow", function() {
-            $(iha_logo.attr('src','https://i.ibb.co/Ky5VG0z/iha-tasuta-vip-logo.gif')).fadeIn();
-        });
-
-
-        // Find the iha slogan and replace it with my own
-        var iha_slogan = $("img[src$='https://www.iha.ee/images/www_iha_slog_1.gif?140313']");
-        $(iha_slogan).fadeOut("slow", function() {
-            $(iha_slogan.attr('src', 'https://i.ibb.co/kGj6z5L/iha-slogan.jpg')).fadeIn();
-        });
-
-
-        // Remove the dumb fucking sex ads and replace them with my own content
-        var top_ad = $("img[src$='https://www.iha.ee/stats/stats/203b198657.gif']");
-        $(top_ad).fadeOut("slow", function() {
-            $(top_ad.attr('src', 'https://i.ibb.co/dPwgWpy/iha-top-ad-gif.gif')).fadeIn();
-            // Get the href of the image and replace it with my Github
-            var top_ad_href = top_ad.parent()
-            $(top_ad_href).attr("href", "https://github.com/raitnigol");
-        });
-
-
-        // Iha.ee changed their ad, remove the new one
-        var new_top_ad = $("img[src$='https://www.iha.ee/stats/stats/203b628019.gif']");
-        $(new_top_ad).fadeOut("slow", function() {
-            $(new_top_ad.attr('src', 'https://i.ibb.co/dPwgWpy/iha-top-ad-gif.gif')).fadeIn();
-            var new_top_ad_href = top_ad.parent()
-            $(new_top_ad_href).attr("href", "https://github.com/raitnigol");
-        });
-
-
-        // Remove the text "Sisuturundus"
-        // Find the closest table to the top ad, find the td that contains the text and change the text to empty
-        var top_ad_text = $(top_ad).closest('table').find('tr').find('td').parent()[0];
-        $(top_ad_text).remove();
-
-
-        // Remove the bottom ad
-        var bottom_ad = $("img[src$='https://www.iha.ee/stats/stats/202b127105.png']");
-        $(bottom_ad).fadeOut("fast", 0);
-
-
-        // Remove the bottom ad if source is .gif
-        var second_bottom_ad = $("img[src$='https://www.iha.ee/stats/stats/200b915890.gif']");
-        $(second_bottom_ad).fadeOut("fast", 0);
-
-
-        // Get all table elements that contain images
-        var images_gif = $('table').find('img.Top_pic[src$=".gif"]');
-        // Filter through the images to get only images that do have .gif on top of them
-        $(images_gif).fadeTo("fast", 0);
-
-
-        // Remove the login texts
-        $("a:contains('Selle pildi nägemiseks pead olema sisse logitud!')").parent().remove();
-
-
-        // Get the URL of the image to later copy on click
-        var imgURL = undefined;
-        // I am not that smart so I do not fucking know why the element was changed, but instead of being nth-child(7) it is now nth-child(8). This fucked up the code. Future reminder for me when fixing code.
-        var img = document.querySelector("body > div:nth-child(8) > table > tbody > tr:nth-child(2) > td > table:nth-child(2) > tbody > tr:nth-child(1) > td.center_td > table:nth-child(3) > tbody > tr:nth-child(2) > td > table:nth-child(3) > tbody > tr > td > table > tbody > tr:nth-child(2) > td");
-        imgURL = $(img).css('background-image');
-        imgURL = imgURL.replace(/(url\(|\)|")/g, '');
-        var user_account_link = $(img).children();
-
-
-        // Remove the href to the user page, because that is annoying.
-        $(user_account_link).remove();
-
-
-        // Show the image URL on top of the image
-        var show_image_url_element = document.getElementsByClassName("muu")[3];
-        var show_image_url_content = `<a href=${imgURL} target="_blank">${imgURL} | ava pilt uues aknas</a>`;
-        show_image_url_element.innerHTML = show_image_url_content
-
-
-        // Create a new child element to display that upon clicking the image you can copy it.
-        $(show_image_url_element).append('<p>Vajuta pildile, et kopeerida pildi URL</p>');
-
-
-        // When clicking on an image, copy the URL of the image
-        img.addEventListener("click", picture_click);
-        function picture_click() {
-            var dummy = $('<input>').val(imgURL).appendTo('body').select();
-            document.execCommand('copy');
-            $(dummy).hide(); // The image URL gets appended to the bottom of the page - hide it after clicking on it. When removing it, the page you enter will have grey background. I dont know how to fix it lol
+        // Remove the bottom footer_banner with the another sex advertisement
+        var footer_banner = document.querySelector('.footer_banner');
+        if (footer_banner) {
+            footer_banner.remove();
         };
 
+        // Remove the ticker bullshit (banner that shows info about how to advertise yourself)
+        var ticker = document.querySelector('#ticker');
+        if (ticker) {
+            ticker.remove();
+        };
 
-        // The default image resolution on iha.ee is 640x480. Check the image resolution on the remote url and if it is larger, make the iha.ee's resolution match
-        function set_image_resolution() {
-            // Get the remote image URL
-            // If something happens, it might be that the nth-child(8) selector is now updated so the code needs to be fixed
-            var image = document.querySelector("body > div:nth-child(8) > table > tbody > tr:nth-child(2) > td > table:nth-child(2) > tbody > tr:nth-child(1) > td.center_td > table:nth-child(3) > tbody > tr:nth-child(2) > td > table:nth-child(3) > tbody > tr > td > table > tbody > tr:nth-child(2) > td");
-            var imageURL = $(image).css('background-image');
-            imageURL = imageURL.replace(/(url\(|\)|")/g, '');
-
-            // Get the resolution
-            const imgSrc = imageURL;
-            const img = new Image();
-            img.src = imgSrc;
-            img.onload = function() {
-                document.body.appendChild(img);
-                var image_width = img.width;
-                var image_height = img.height;
-                // Set the resolution
-                $(image).width(image_width)
-                $(image).height(image_height)
-                $(img).remove();
+        // Adjust opacity for .gif images within specified divs
+        const imgWrappers = document.querySelectorAll('div.imgwrapper[style*="background-image"], div.imgwrapper_big[style*="background-image"]');
+        imgWrappers.forEach(wrapper => {
+            const img = wrapper.querySelector('img');
+            if (img && img.src.endsWith('.gif')) {
+                img.style.opacity = '0';
             }
+        });
+
+        // Remove <a> tags with specific text
+        const links = document.querySelectorAll('a');
+        links.forEach(link => {
+            if (link.textContent === 'Selle pildi nägemiseks pead olema sisse logitud!') {
+                // Assuming the parent div is to be removed, not just the <a> tag
+                if (link.parentNode) {
+                    link.parentNode.style.display = 'none'; // Hides the entire div containing the link
+                }
+            }
+        });
+
+        // Change the right panel background color to the color specified in the configuration
+        var rightPanel = document.querySelector('.rightpanel');
+        if (rightPanel) {
+            rightPanel.style.backgroundColor = right_panel_color;
         }
-        set_image_resolution();
+        // New functionalities
+        changeFont();
+        changeWallpaper();
+        replaceLogoAndSlogan();
+        removeComments();
 
+        // Print to console whether the user is logged in or not
+        console.log("User logged in:", isUserLoggedIn())
+    }
 
-        // If not logged in, remove the "add comment" section
-        $(".AddCommentForm:contains('Lisa kommentaar')").remove();
+    // Initial run and observe for dynamic changes
+    adjustContent();
+
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                adjustContent();
+            }
+        });
     });
-}, false);
+    observer.observe(document.body, { childList: true, subtree: true });
+})();
