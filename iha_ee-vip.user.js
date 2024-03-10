@@ -13,6 +13,7 @@
 
 (function() {
     'use strict';
+
     // Get the language for the user
     function getUserLanguage() {
         var langCode = +Cookies.get('Lang'); // Convert to number with unary plus
@@ -28,7 +29,36 @@
     }
     console.log("Current language:", getUserLanguage());
 
+    // Get the page title and change it
+    var page_title = document.title;
+
+    // Split the title and change the part - "Iha.ee - Seksikate inimeste kohtumispaik" to "Iha.ee - Tasuta VIP"
+    var page_current_location = page_title.split("|")[0];
+    var page_title_description = page_title.split("|")[1];
+
+    page_title = `${page_current_location} | Iha.ee - Tasuta VIP`
+    document.title = page_title;
+
+    // The following code is useful for identifying which page the user is currently in
+    // so you could apply logic properly (lets say you want to change some divs or other elements, but only in a certain page)
+    function getCurrentPathSegments() {
+        var path = window.location.pathname;
+        if (path === '/') {
+            return ['root'];
+        }
+
+        var segments = path.split('/').filter(function(segment) {
+            return segment.trim() !== '';
+        });
+
+        return segments;
+    }
+
+    var currentPathSegments = getCurrentPathSegments();
+    console.log("Current path segments:", currentPathSegments);
+
     // Based on language, remove content from the website
+
     function deleteDivByLanguageText() {
         const language = getUserLanguage();
         let regexPatterns;
@@ -45,7 +75,7 @@
                 regexPatterns = [/Tämän  päivän syntymäpäiväsankarit\s+\(\d+ henkilöä\)/, /Nykyhetkellä online-käyttäjiä\s+\(\d+ henkilöä\)/];
                 break;
             case "russian":
-                regexPatterns = [/* Russian regex patterns here */];
+                regexPatterns = [];
                 // Note - sorry, but learn estonian or english, cause I will not modify this code for you. For certain reasons :)
                 break;
             case "estonian":
@@ -99,7 +129,9 @@
     resizeText('a', '18px');
     // Change the wallpaper of the site
     function changeWallpaper() {
-        document.body.style.backgroundImage = 'url(https://i.ibb.co/hR726CC/iha-background.jpg)';
+        document.body.style.backgroundImage = 'none';
+        document.body.style.backgroundColor = 'black';
+        // document.body.style.backgroundImage = 'url(https://i.ibb.co/hR726CC/iha-background.jpg)';
         document.body.style.backgroundSize = 'cover';
     }
 
@@ -141,6 +173,7 @@
         const header_background_color = "black"; // default is black. change at your own risk, should work with basic colors.
         const center_panel_color = "black"; // default is black. change at your own risk, should work with basic colors.
         const change_page_text_color = true; // default is true. sets all text to white because the background is black.
+        var main_div_border_color = "white"; // default is white. sets the border for main div to white.
 
         // Check if the user is logged in or not
         function isUserLoggedIn() {
@@ -166,6 +199,66 @@
                 divElements[divelement].style.color = "white";
             };
         };
+
+        function addMainBorder() {
+            // Set the border color
+            main_div_border_color = "white";
+
+            // Find all elements with class 'maindiv'
+            var elements = document.querySelectorAll('.maindiv');
+
+            // Iterate through the elements and set their border style
+            elements.forEach(function(element) {
+                element.style.border = `2px solid ${main_div_border_color}`;
+            });
+        }
+        addMainBorder();
+
+        // center the main div only when in the root of the page (www.iha.ee)
+        if (currentPathSegments[0] == "root") {
+            function centerMainDiv() {
+                // Assuming .maindiv elements should be directly centered inside the body or a specific container
+                // This will work well if there's one maindiv or if multiple maindivs are intended to be stacked and centered
+
+                // Set the body or container to be a flex container to center the child elements
+                document.body.style.display = 'flex';
+                document.body.style.flexDirection = 'column';
+                document.body.style.justifyContent = 'center';
+                document.body.style.alignItems = 'center';
+                document.body.style.height = '100vh'; // Make sure the body takes at least the full viewport height
+
+                // Find all elements with class 'maindiv'
+                var elements = document.querySelectorAll('.maindiv');
+
+                elements.forEach(function(element) {
+                    element.style.margin = 'auto'; // Helps center if flexbox doesn't apply, depending on the structure
+                    // Optional: set a max-width or width for better control over the layout
+                    element.style.maxWidth = '90%'; // Example, adjust as needed
+                    element.style.boxSizing = 'border-box'; // Include padding and borders in the element's total width and height
+                });
+            }
+            centerMainDiv();
+        }
+
+        function resizeLangIcon() {
+            var langicon = document.querySelector('.langicon img');
+            if (langicon) {
+                langicon.style.width = '40px';
+            }
+        }
+        resizeLangIcon();
+
+        function setLangSelectionBoxBackgroundColor() {
+            var langSelectionBox = document.getElementById('langselectionbox');
+            if (langSelectionBox) {
+                langSelectionBox.style.backgroundColor = "black";
+                langSelectionBox.style.border = "2px solid white";
+            }
+        }
+
+        // Call the function
+        setLangSelectionBoxBackgroundColor();
+
         // Remove left menu links that can not be accessed when not logged
         function removeMenuItemsIfNotLoggedIn() {
             if (!isUserLoggedIn()) {
@@ -240,7 +333,101 @@
             };
         };
 
-    removeMenuItemsIfNotLoggedIn();
+        removeMenuItemsIfNotLoggedIn();
+
+        // Only execute the code when viewing nude pictures.
+        if (currentPathSegments[0] == "picture") {
+            function getImageURL() {
+                // Select the element that has the background-image.
+                const imgWrapper = document.querySelector('.imgwrapper_big');
+
+                // Extract the background-image style property.
+                const style = imgWrapper ? window.getComputedStyle(imgWrapper) : null;
+                const backgroundImage = style ? style.backgroundImage : null;
+
+                // The backgroundImage will be in the format: url("http://example.com/image.jpg")
+                // Extract the URL part using a RegExp.
+                if (backgroundImage) {
+                    const match = backgroundImage.match(/url\("?(.+?)"?\)/);
+                    if (match) {
+                        return match[1]; // This is the URL of the background image.
+                    }
+                }
+
+                // Return null or an appropriate default value if the image URL couldn't be retrieved.
+                return null;
+            }
+
+            // Example usage:
+            console.log(getImageURL()); // Logs the URL of the background image, or null if not found.
+
+            // Removes the href attribute from the anchor tag around the image.
+            function removeImageHref() {
+                // Select all anchor tags in the document
+                const anchors = document.querySelectorAll('a');
+
+                // Iterate through all anchor tags to find matching pattern
+                anchors.forEach(anchor => {
+                    // Check if the href matches the desired pattern using RegExp
+                    if (/www\.iha\.ee\/users\/.+/.test(anchor.getAttribute('href'))) {
+                        // Remove the href attribute if a match is found
+                        anchor.removeAttribute('href');
+                    }
+                });
+            }
+            removeImageHref();
+
+            function setImageResolution() {
+                const imgWrapper = document.querySelector('.imgwrapper_big');
+                if (imgWrapper) {
+                    const imageURL = imgWrapper.style.backgroundImage.slice(5, -2); // Extract URL from background-image
+                    const img = new Image();
+                    img.onload = function() {
+                        const width = img.naturalWidth;
+                        const height = img.naturalHeight;
+
+                        // Optionally, you can check if the image dimensions are larger than a specific size
+                        // and only then update the wrapper size. For demonstration, I'll update it directly.
+                        imgWrapper.style.maxWidth = `${width}px`;
+                        imgWrapper.style.maxHeight = `${height}px`;
+
+                        // If you also want to update the src of an <img> element within imgWrapper:
+                        const imgElement = imgWrapper.querySelector('img');
+                        if (imgElement) {
+                            imgElement.src = imageURL;
+                            // Adjust the <img> element to not exceed the background dimensions (optional)
+                            imgElement.style.maxWidth = '100%';
+                            imgElement.style.maxHeight = '100%';
+                        }
+                    };
+                    img.src = imageURL;
+                }
+            }
+            setImageResolution();
+
+            // Displays the background-image URL on top of the picture div and copies it on click.
+            function showImageURLOnTop() {
+                const imgWrapper = document.querySelector('.imgwrapper_big');
+                if (imgWrapper) {
+                    const imageURL = getImageURL();
+                    const overlay = document.createElement('div');
+                    overlay.innerHTML = `${imageURL} <b>Vajuta lingile, et see kopeerida.</b>`;
+                    overlay.style.position = 'absolute';
+                    overlay.style.top = '0';
+                    overlay.style.left = '0';
+                    overlay.style.color = 'white';
+                    overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                    overlay.style.cursor = 'pointer';
+                    overlay.addEventListener('click', function() {
+                        navigator.clipboard.writeText(imageURL).then(() => {
+                            alert('URL copied to clipboard!');
+                        });
+                    });
+                    imgWrapper.style.position = 'relative';
+                    imgWrapper.appendChild(overlay);
+                }
+            }
+        }
 
         // Change the header icons
         function replaceIconsWithSVG() {
@@ -296,7 +483,7 @@
 
         replaceIconsWithSVG();
 
-            // Make the header stick to the top
+        // Make the header stick to the top
         if (!header_stick_to_top) {
             var header = document.getElementById('header');
             if (header) {
@@ -313,7 +500,7 @@
 
         // Remove the right side statistics.
         if (!show_right_side_statistics) {
-        var right_side_statistics = document.querySelector('#rightstatistics');
+            var right_side_statistics = document.querySelector('#rightstatistics');
             if (right_side_statistics) {
                 right_side_statistics.remove();
             };
@@ -428,6 +615,22 @@
 
         // Print to console whether the user is logged in or not
         console.log("User logged in:", isUserLoggedIn())
+
+        function removeRatingMenu() {
+            if (!isUserLoggedIn()) {
+                // Assuming the entire section you want to remove is uniquely identified by its style or content.
+                // Since there's no unique ID or class strictly for the rating section, we need to target a broader container or a specific identifiable element within it.
+
+                // This example will remove the whole container div that includes the rating and login prompt.
+                // You might need to adjust the selector based on the actual structure and how you can best identify the section to remove.
+                const container = document.querySelector('div[style*="margin: 0px auto;"][style*="max-width: 615px;"]'); // Adjust the selector as needed.
+                if (container) {
+                    container.parentNode.removeChild(container);
+                }
+            }
+        }
+
+        removeRatingMenu();
     }
 
     // Initial run and observe for dynamic changes
